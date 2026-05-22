@@ -1,15 +1,29 @@
 ﻿# Bailongma - Git Ignore
 
-## Electron / Runtime
-Bailongma.exe
+## Electron / Runtime binaries (catch-all)
+*.exe
 *.dll
 *.pak
 *.bin
-icudtl.dat
+*.dat
+*.asar
+snapshot_blob.bin
+vk_swiftshader_icd.json
 LICENSES.chromium.html
 sources/
-*.pak
-*.dat
+
+## Runtime generated files
+engine.pid
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+## Data / Reviews
+reviews/*.jsonl
+
+## Voice model assets (pre-trained weights)
+*.tiktoken
+*.npz
 
 ## Node
 node_modules/
@@ -35,3 +49,6 @@ out/
 .vscode/
 .idea/
 *.swp
+## Runtime state (regenerated dynamically)
+consciousness.json
+memory_bridge.json
