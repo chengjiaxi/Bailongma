@@ -1,0 +1,14 @@
+{
+  "name": "bailongma-orchestrator-v2",
+  "version": "3.0.0",
+  "description": "BaiLongma Orchestrator v3.0 — 5-Layer Persistence Engine",
+  "main": "run-v2.js",
+  "scripts": {
+    "start": "node run-v2.js",
+    "test": "node run-v2.js --test"
+  },
+  "dependencies": {
+    "sql.js": "^1.14.1",
+    "uuid": "^9.0.0"
+  }
+}

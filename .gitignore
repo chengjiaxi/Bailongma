@@ -1,0 +1,37 @@
+﻿# Bailongma - Git Ignore
+
+## Electron / Runtime
+Bailongma.exe
+*.dll
+*.pak
+*.bin
+icudtl.dat
+LICENSES.chromium.html
+sources/
+*.pak
+*.dat
+
+## Node
+node_modules/
+.cache/
+
+## Environment
+.env
+.env.local
+
+## OS
+.DS_Store
+Thumbs.db
+
+## Logs
+*.log
+logs/
+
+## Build output
+dist/
+out/
+
+## IDE
+.vscode/
+.idea/
+*.swp
