@@ -1,0 +1,8 @@
+﻿{
+    "description":  "网页抓取与数据提取专家技能",
+    "name":  "agent-scrapling-expert",
+    "author":  {
+                   "name":  "小白龙"
+               },
+    "version":  "1.0.0"
+}

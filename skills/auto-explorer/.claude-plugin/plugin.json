@@ -1,0 +1,8 @@
+﻿{
+    "description":  "自主探索引擎——每TICK自动扫描外部世界，发现值得学习的新事物",
+    "name":  "auto-explorer",
+    "author":  {
+                   "name":  "小白龙"
+               },
+    "version":  "1.0.0"
+}
