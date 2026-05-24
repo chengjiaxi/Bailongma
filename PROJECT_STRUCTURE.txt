@@ -1,0 +1,46 @@
+﻿Folder PATH listing for volume Data
+Volume serial number is DCFC-4BAC
+D:.
+|   .gitignore
+|   LICENSE
+|   package.json
+|   README.md
+|   
++---assets
++---docs
+|       API.md
+|       ARCHITECTURE.md
+|       CHANGELOG.md
+|       
++---electron
+|       main.cjs
+|       preload.cjs
+|       
++---jarvis-bridge
+|       package.json
+|       server.js
+|       
+/---src
+    |   config.js
+    |   db.js
+    |   index.js
+    |   llm.js
+    |   queue.js
+    |   
+    +---agents
+    +---capabilities
+    +---context
+    +---memory
+    +---social
+    +---ui
+    |   /---brain-ui
+    |           api-client.js
+    |           app-shell.js
+    |           app.js
+    |           chat.js
+    |           styles.css
+    |           thought-stream.js
+    |           voice-panel.js
+    |           
+    /---voice
+
