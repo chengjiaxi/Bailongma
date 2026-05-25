@@ -1,8 +1,8 @@
 ﻿{
     "name":  "bailongma",
     "productName":  "Bailongma",
-    "version":  "3.0.0",
-    "description":  "A continuously running digital consciousness framework - Your personal Jarvis AI assistant (V3)",
+    "version":  "4.0.0",
+    "description":  "A continuously running digital consciousness framework - Your self-evolving AI agent (V4)",
     "type":  "module",
     "main":  "electron/main.cjs",
     "scripts":  {
