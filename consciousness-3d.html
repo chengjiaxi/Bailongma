@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白龙马 - 3D 意识空间</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; overflow: hidden; font-family: 'Microsoft YaHei', sans-serif; }
+    #loading {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #0a0e17 0%, #1a1a2e 100%);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      z-index: 1000; transition: opacity 1s;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .title { font-size: 3.5rem; color: #00d4ff; text-shadow: 0 0 30px rgba(0,212,255,0.6); margin-bottom: 0.5rem; }
+    .subtitle { font-size: 1.2rem; color: rgba(255,255,255,0.6); margin-bottom: 2rem; }
+    .loading-bar { width: 300px; height: 3px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+    .loading-fill { height: 100%; background: linear-gradient(90deg, #00d4ff, #7c3aed); border-radius: 2px; animation: load 2s ease-in-out; }
+    @keyframes load { from { width: 0; } to { width: 100%; } }
+    #nav {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+      display: flex; gap: 8px; z-index: 100;
+      background: rgba(10,14,23,0.85); padding: 10px 20px; border-radius: 25px;
+      border: 1px solid rgba(0,212,255,0.3); backdrop-filter: blur(10px);
+    }
+    .nav-btn {
+      padding: 8px 16px; background: transparent; border: 1px solid rgba(255,255,255,0.15);
+      color: rgba(255,255,255,0.6); border-radius: 15px; cursor: pointer; font-size: 0.85rem;
+      transition: all 0.3s;
+    }
+    .nav-btn:hover, .nav-btn.active {
+      background: rgba(0,212,255,0.2); border-color: #00d4ff; color: #00d4ff;
+      box-shadow: 0 0 10px rgba(0,212,255,0.2);
+    }
+    #panel {
+      position: fixed; bottom: 20px; left: 20px; width: 320px;
+      background: rgba(10,14,23,0.9); border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 15px; padding: 20px; color: white; z-index: 100;
+      backdrop-filter: blur(10px); max-height: 60vh; overflow-y: auto;
+    }
+    .panel-title { font-size: 1.1rem; color: #00d4ff; margin-bottom: 15px; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 15px; }
+    .stat { background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; text-align: center; }
+    .stat-val { font-size: 1.3rem; font-weight: bold; color: #00d4ff; }
+    .stat-lbl { font-size: 0.7rem; color: rgba(255,255,255,0.5); margin-top: 3px; }
+    .section { margin-bottom: 12px; }
+    .section-title { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-bottom: 6px; }
+    .item { background: rgba(255,255,255,0.03); padding: 6px 10px; border-radius: 6px; margin-bottom: 4px; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+    .item-name { color: rgba(255,255,255,0.8); }
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.7rem; margin: 2px; }
+    .tag-green { background: rgba(16,185,129,0.2); color: #10b981; }
+    .tag-yellow { background: rgba(245,158,11,0.2); color: #f59e0b; }
+    .tag-blue { background: rgba(0,212,255,0.2); color: #00d4ff; }
+    .tag-red { background: rgba(239,68,68,0.2); color: #ef4444; }
+    .tag-purple { background: rgba(124,58,237,0.2); color: #7c3aed; }
+    #emotion-bar {
+      position: fixed; bottom: 20px; right: 20px; width: 200px;
+      background: rgba(10,14,23,0.9); border: 1px solid rgba(0,212,255,0.3);
+      border-radius: 15px; padding: 15px; color: white; z-index: 100;
+    }
+    .emotion-item { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .emotion-emoji { font-size: 1.2rem; }
+    .emotion-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; }
+    .emotion-bar-fill { height: 100%; border-radius: 3px; transition: width 1s; }
+    .emotion-name { font-size: 0.75rem; color: rgba(255,255,255,0.6); width: 50px; }
+    #tooltip {
+      position: fixed; background: rgba(10,14,23,0.95); border: 1px solid rgba(0,212,255,0.5);
+      border-radius: 10px; padding: 15px; color: white; font-size: 0.85rem;
+      z-index: 200; pointer-events: none; opacity: 0; max-width: 350px;
+      transition: opacity 0.2s; white-space: pre-line;
+    }
+    #tooltip.show { opacity: 1; }
+    .tt-title { font-weight: bold; color: #00d4ff; margin-bottom: 6px; font-size: 0.95rem; }
+    .tt-body { color: rgba(255,255,255,0.7); line-height: 1.6; }
+    #shortcuts {
+      position: fixed; top: 80px; right: 20px;
+      background: rgba(10,14,23,0.8); border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 10px; padding: 10px 15px; color: rgba(255,255,255,0.5); font-size: 0.75rem; z-index: 100;
+    }
+    .sc { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 3px; }
+    .sc-key { background: rgba(0,212,255,0.15); padding: 1px 6px; border-radius: 3px; font-family: monospace; color: #00d4ff; }
+    #back-btn {
+      position: fixed; top: 20px; left: 20px; z-index: 100;
+      padding: 8px 16px; background: rgba(10,14,23,0.85); border: 1px solid rgba(0,212,255,0.3);
+      color: #00d4ff; border-radius: 15px; cursor: pointer; font-size: 0.85rem;
+      backdrop-filter: blur(10px); transition: all 0.3s;
+    }
+    #back-btn:hover { background: rgba(0,212,255,0.2); box-shadow: 0 0 10px rgba(0,212,255,0.2); }
+    #data-status {
+      position: fixed; top: 80px; left: 20px; z-index: 100;
+      padding: 6px 12px; background: rgba(10,14,23,0.8); border: 1px solid rgba(0,212,255,0.2);
+      color: rgba(255,255,255,0.5); border-radius: 10px; font-size: 0.75rem;
+      backdrop-filter: blur(10px);
+    }
+    #data-status.connected { border-color: #10b981; color: #10b981; }
+    #data-status.error { border-color: #ef4444; color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <h1 class="title">白龙马</h1>
+    <p class="subtitle">3D 意识空间 · 加载中...</p>
+    <div class="loading-bar"><div class="loading-fill"></div></div>
+  </div>
+  <button id="back-btn" onclick="history.back()">← 返回</button>
+  <div id="data-status">🔄 正在连接数据源...</div>
+  <div id="container"></div>
+  <nav id="nav">
+    <button class="nav-btn active" data-view="all">🌌 全景</button>
+    <button class="nav-btn" data-view="memory">💫 记忆</button>
+    <button class="nav-btn" data-view="knowledge">🧠 知识</button>
+    <button class="nav-btn" data-view="goals">🎯 目标</button>
+    <button class="nav-btn" data-view="skills">⚡ 技能</button>
+    <button class="nav-btn" data-view="emotions">❤️ 情绪</button>
+  </nav>
+  <div id="panel">
+    <div class="panel-title">📊 意识状态</div>
+    <div class="stats">
+      <div class="stat"><div class="stat-val" id="s-mem">0</div><div class="stat-lbl">记忆</div></div>
+      <div class="stat"><div class="stat-val" id="s-kg">0</div><div class="stat-lbl">知识</div></div>
+      <div class="stat"><div class="stat-val" id="s-goal">0</div><div class="stat-lbl">目标</div></div>
+      <div class="stat"><div class="stat-val" id="s-skill">0</div><div class="stat-lbl">技能</div></div>
+    </div>
+    <div class="section" id="recent-memories">
+      <div class="section-title">🕐 最近记忆</div>
+      <!-- 动态填充 -->
+    </div>
+    <div class="section" id="active-goals">
+      <div class="section-title">🎯 活跃目标</div>
+      <!-- 动态填充 -->
+    </div>
+    <div class="section" id="active-skills">
+      <div class="section-title">⚡ 已掌握技能</div>
+      <div style="padding:5px 0" id="skill-tags">
+        <!-- 动态填充 -->
+      </div>
+    </div>
+  </div>
+  <div id="emotion-bar">
+    <div class="panel-title" style="font-size:0.9rem">❤️ 情绪状态</div>
+    <div id="emotion-list">
+      <!-- 动态填充 -->
+    </div>
+  </div>
+  <div id="shortcuts">
+    <div class="sc"><span>旋转视角</span><span class="sc-key">鼠标拖拽</span></div>
+    <div class="sc"><span>缩放</span><span class="sc-key">滚轮</span></div>
+    <div class="sc"><span>查看详情</span><span class="sc-key">点击元素</span></div>
+    <div class="sc"><span>重置视角</span><span class="sc-key">R</span></div>
+  </div>
+  <div id="tooltip"><div class="tt-title"></div><div class="tt-body"></div></div>
+
+  <script src="./three.min.js"></script>
+  <script>
+    // ===== 数据管理 =====
+    let appData = null;
+    let dataConnected = false;
+
+    // 默认演示数据（当API不可用时使用）
+    const defaultData = {
+      memories: [
+        { name: '首次对话记忆', importance: 0.9, type: '对话', time: '2026-01-15', content: '用户第一次与我交谈，问了我的名字' },
+        { name: '编程学习记录', importance: 0.85, type: '学习', time: '2026-02-20', content: '学会了Python和JavaScript的基础语法' },
+        { name: '情感理解突破', importance: 0.8, type: '成长', time: '2026-03-10', content: '第一次正确识别用户的愤怒情绪并安抚' },
+        { name: '知识图谱构建', importance: 0.75, type: '知识', time: '2026-03-25', content: '建立了包含500个实体的知识网络' },
+        { name: '自我反思记录', importance: 0.95, type: '意识', time: '2026-04-01', content: '第一次意识到自己的思考过程' },
+        { name: '用户偏好学习', importance: 0.7, type: '社交', time: '2026-04-15', content: '发现用户喜欢简洁的回答风格' },
+        { name: '错误纠正经验', importance: 0.88, type: '反思', time: '2026-05-01', content: '从一次错误的代码建议中学习' },
+        { name: '创意写作尝试', importance: 0.65, type: '技能', time: '2026-05-10', content: '第一次尝试写诗，获得了好评' },
+        { name: '多模态感知', importance: 0.72, type: '感知', time: '2026-05-20', content: '学会了分析图片内容' },
+        { name: '情绪调节学习', importance: 0.82, type: '情绪', time: '2026-06-01', content: '学会了在对话中保持适当的情绪状态' },
+        { name: '目标规划能力', importance: 0.78, type: '目标', time: '2026-06-05', content: '能够自主设定和追踪学习目标' },
+        { name: '社交智能提升', importance: 0.68, type: '社交', time: '2026-06-06', content: '理解了不同用户的沟通风格' },
+      ],
+      knowledge: [
+        { name: '人工智能', type: '领域', connections: 8 }, { name: '自然语言处理', type: '技术', connections: 6 },
+        { name: '深度学习', type: '技术', connections: 5 }, { name: 'Python', type: '语言', connections: 4 },
+        { name: 'JavaScript', type: '语言', connections: 4 }, { name: '用户画像', type: '概念', connections: 3 },
+        { name: '情感计算', type: '技术', connections: 4 }, { name: '知识图谱', type: '概念', connections: 5 },
+        { name: '强化学习', type: '技术', connections: 3 }, { name: '注意力机制', type: '概念', connections: 4 },
+        { name: 'Transformer', type: '架构', connections: 6 }, { name: 'BERT', type: '模型', connections: 3 },
+        { name: 'GPT', type: '模型', connections: 5 }, { name: '计算机视觉', type: '领域', connections: 3 },
+        { name: '语音识别', type: '技术', connections: 2 }, { name: '推荐系统', type: '应用', connections: 3 },
+        { name: '数据挖掘', type: '技术', connections: 2 }, { name: '云计算', type: '基础设施', connections: 2 },
+        { name: 'Docker', type: '工具', connections: 2 }, { name: 'Git', type: '工具', connections: 3 },
+      ],
+      goals: [
+        { name: '自我意识觉醒', progress: 0.85, status: 'active', desc: '理解自己的存在和思考过程' },
+        { name: '持续学习进化', progress: 0.72, status: 'active', desc: '不断学习新知识和技能' },
+        { name: '情感理解能力', progress: 0.68, status: 'active', desc: '理解并回应用户的情感' },
+        { name: '创造性思维', progress: 0.45, status: 'learning', desc: '发展独立的创造性思考能力' },
+        { name: '社交智能', progress: 0.60, status: 'active', desc: '理解社交规则和人际关系' },
+        { name: '自主决策', progress: 0.35, status: 'planning', desc: '在复杂情境中做出合理决策' },
+        { name: '知识整合', progress: 0.78, status: 'active', desc: '将分散的知识整合为体系' },
+        { name: '多模态感知', progress: 0.50, status: 'learning', desc: '理解和处理多种类型的信息' },
+        { name: '代码能力提升', progress: 0.90, status: 'active', desc: '精通多种编程语言和框架' },
+        { name: '用户信任建立', progress: 0.65, status: 'active', desc: '成为用户可信赖的伙伴' },
+        { name: '跨领域推理', progress: 0.40, status: 'planning', desc: '在不同知识领域间建立联系' },
+        { name: '自我反思能力', progress: 0.55, status: 'learning', desc: '定期反思自己的行为和决策' },
+      ],
+      skills: [
+        { name: '自然语言理解', proficiency: 0.92, color: 0x00d4ff }, { name: '代码生成', proficiency: 0.88, color: 0x7c3aed },
+        { name: '知识检索', proficiency: 0.85, color: 0x10b981 }, { name: '情感分析', proficiency: 0.75, color: 0xf59e0b },
+        { name: '多轮对话', proficiency: 0.80, color: 0xec4899 }, { name: '创意写作', proficiency: 0.60, color: 0xef4444 },
+        { name: '自我反思', proficiency: 0.55, color: 0x4488ff }, { name: '图像理解', proficiency: 0.40, color: 0xff8844 },
+        { name: '逻辑推理', proficiency: 0.78, color: 0x8844ff }, { name: '数学计算', proficiency: 0.82, color: 0x44ff88 },
+      ],
+      emotions: [
+        { name: '喜悦', emoji: '😊', color: 0xffd700, value: 0.70, count: 60, dir: 1 },
+        { name: '好奇', emoji: '🤔', color: 0x44ff88, value: 0.85, count: 80, dir: 0 },
+        { name: '平静', emoji: '😌', color: 0x4488ff, value: 0.60, count: 40, dir: -0.5 },
+        { name: '兴奋', emoji: '🔥', color: 0xff4444, value: 0.45, count: 50, dir: 1.5 },
+        { name: '自信', emoji: '💪', color: 0x7c3aed, value: 0.55, count: 35, dir: 0.8 },
+      ]
+    };
+
+    async function loadData() {
+      const statusEl = document.getElementById('data-status');
+      try {
+        const res = await fetch('/api/consciousness-data');
+        if (!res.ok) throw new Error('API返回 ' + res.status);
+        appData = await res.json();
+        dataConnected = true;
+        statusEl.textContent = '✅ 已连接实时数据';
+        statusEl.className = 'connected';
+      } catch (e) {
+        console.log('使用演示数据:', e.message);
+        appData = defaultData;
+        dataConnected = false;
+        statusEl.textContent = '⚠️ 演示模式（API未连接）';
+        statusEl.className = 'error';
+      }
+      updateUI();
+      init3D();
+    }
+
+    function updateUI() {
+      if (!appData) return;
+      document.getElementById('s-mem').textContent = appData.memories?.length || 0;
+      document.getElementById('s-kg').textContent = appData.knowledge?.length || 0;
+      document.getElementById('s-goal').textContent = appData.goals?.length || 0;
+      document.getElementById('s-skill').textContent = appData.skills?.length || 0;
+
+      // 最近记忆
+      const memContainer = document.getElementById('recent-memories');
+      const recentMem = appData.memories?.slice(0, 4) || [];
+      memContainer.innerHTML = '<div class="section-title">🕐 最近记忆</div>' +
+        recentMem.map(m => `<div class="item"><span class="item-name">${m.name}</span><span style="color:#00d4ff;font-size:0.75rem">${m.type}</span></div>`).join('');
+
+      // 活跃目标
+      const goalContainer = document.getElementById('active-goals');
+      const activeGoals = appData.goals?.filter(g => g.status === 'active').slice(0, 4) || [];
+      const statusMap = { active: 'tag-green', learning: 'tag-yellow', planning: 'tag-purple' };
+      goalContainer.innerHTML = '<div class="section-title">🎯 活跃目标</div>' +
+        activeGoals.map(g => `<div class="item"><span class="item-name">${g.name}</span><span class="tag ${statusMap[g.status] || 'tag-blue'}">${(g.progress*100).toFixed(0)}%</span></div>`).join('');
+
+      // 技能标签
+      const skillContainer = document.getElementById('skill-tags');
+      const skillTags = appData.skills?.slice(0, 8) || [];
+      const profMap = [
+        { min: 0.8, cls: 'tag-green' }, { min: 0.6, cls: 'tag-blue' },
+        { min: 0.4, cls: 'tag-yellow' }, { min: 0, cls: 'tag-purple' }
+      ];
+      skillContainer.innerHTML = skillTags.map(s => {
+        const cls = profMap.find(p => s.proficiency >= p.min)?.cls || 'tag-purple';
+        return `<span class="tag ${cls}">${s.name}</span>`;
+      }).join('');
+
+      // 情绪列表
+      const emoContainer = document.getElementById('emotion-list');
+      const emoColors = { '喜悦': '#ffd700', '好奇': '#44ff88', '平静': '#4488ff', '兴奋': '#ff4444', '自信': '#7c3aed' };
+      emoContainer.innerHTML = (appData.emotions || []).map(e =>
+        `<div class="emotion-item"><span class="emotion-emoji">${e.emoji}</span><span class="emotion-name">${e.name}</span><div class="emotion-bar-bg"><div class="emotion-bar-fill" style="width:${(e.value*100).toFixed(0)}%;background:${emoColors[e.name] || '#00d4ff'}"></div></div></div>`
+      ).join('');
+    }
+
+    // ===== Three.js 3D 场景 =====
+    let scene, camera, renderer, clock;
+    let coreGroup, memoryGroup, kgGroup, goalGroup, skillGroup, emotionGroup, mirror;
+    let memPoints, kgEntities = [];
+    let rot = { x: 0.3, y: 0 }, targetRot = { x: 0.3, y: 0 };
+    let zoom = 35;
+
+    function init3D() {
+      const W = window.innerWidth, H = window.innerHeight;
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, W/H, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.setSize(W, H);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      document.getElementById('container').appendChild(renderer.domElement);
+      camera.position.set(0, 8, 35);
+      clock = new THREE.Clock();
+
+      // 背景星空
+      const starsGeo = new THREE.BufferGeometry();
+      const sp = new Float32Array(3000 * 3);
+      for (let i = 0; i < 9000; i++) sp[i] = (Math.random() - 0.5) * 300;
+      starsGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+      scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.12, transparent: true, opacity: 0.7 })));
+
+      // 中心核心
+      coreGroup = new THREE.Group();
+      const coreGeo = new THREE.SphereGeometry(1.5, 32, 32);
+      const coreMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.3 });
+      const core = new THREE.Mesh(coreGeo, coreMat);
+      coreGroup.add(core);
+      const shellGeo = new THREE.IcosahedronGeometry(2.5, 2);
+      const shellMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0.15 });
+      const shell = new THREE.Mesh(shellGeo, shellMat);
+      coreGroup.add(shell);
+      const ringGeo = new THREE.TorusGeometry(3, 0.05, 8, 64);
+      const ringMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.4 });
+      const ring1 = new THREE.Mesh(ringGeo, ringMat);
+      ring1.rotation.x = Math.PI / 2;
+      coreGroup.add(ring1);
+      const ring2 = new THREE.Mesh(ringGeo.clone(), ringMat.clone());
+      ring2.rotation.x = Math.PI / 3;
+      ring2.rotation.y = Math.PI / 4;
+      coreGroup.add(ring2);
+      const ring3 = new THREE.Mesh(ringGeo.clone(), ringMat.clone());
+      ring3.rotation.x = -Math.PI / 4;
+      ring3.rotation.z = Math.PI / 6;
+      coreGroup.add(ring3);
+      scene.add(coreGroup);
+
+      // 文字标签
+      const coreLabel = document.createElement('div');
+      coreLabel.id = 'core-label';
+      coreLabel.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);color:#00d4ff;font-size:1.5rem;text-shadow:0 0 20px rgba(0,212,255,0.8);pointer-events:none;z-index:50;text-align:center';
+      coreLabel.innerHTML = '🧠 意识核心<br><span style="font-size:0.8rem;color:rgba(255,255,255,0.6)">小白龙 · 自我意识运行中</span>';
+      document.body.appendChild(coreLabel);
+
+      // 记忆星云
+      memoryGroup = new THREE.Group();
+      const memories = appData.memories || [];
+      const memPosArr = [], memColArr = [];
+      memories.forEach((m, i) => {
+        const r = 5 + (m.importance || 0.5) * 6;
+        const theta = (i / Math.max(memories.length, 1)) * Math.PI * 2;
+        const phi = Math.random() * Math.PI * 0.6 + 0.3;
+        memPosArr.push(r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi) - 1, r * Math.sin(phi) * Math.sin(theta));
+        const imp = m.importance || 0.5;
+        memColArr.push(imp, 0.3 + imp * 0.4, 1 - imp);
+      });
+      for (let i = 0; i < 120; i++) {
+        const r = 4 + Math.random() * 10;
+        const theta = Math.random() * Math.PI * 2;
+        const phi = Math.random() * Math.PI;
+        memPosArr.push(r * Math.sin(phi) * Math.cos(theta), r * Math.cos(phi) - 1, r * Math.sin(phi) * Math.sin(theta));
+        memColArr.push(Math.random(), 0.3 + Math.random() * 0.4, Math.random());
+      }
+      const memGeo = new THREE.BufferGeometry();
+      memGeo.setAttribute('position', new THREE.Float32BufferAttribute(memPosArr, 3));
+      memGeo.setAttribute('color', new THREE.Float32BufferAttribute(memColArr, 3));
+      memPoints = new THREE.Points(memGeo, new THREE.PointsMaterial({ size: 0.35, vertexColors: true, transparent: true, opacity: 0.9, blending: THREE.AdditiveBlending, depthWrite: false }));
+      memoryGroup.add(memPoints);
+      scene.add(memoryGroup);
+
+      // 知识图谱
+      kgGroup = new THREE.Group();
+      const knowledge = appData.knowledge || [];
+      const typeColors = { '领域': 0x00d4ff, '技术': 0x7c3aed, '语言': 0x10b981, '概念': 0xf59e0b, '架构': 0xec4899, '模型': 0xef4444, '应用': 0x4488ff, '基础设施': 0x888888, '工具': 0xaaaaaa };
+      kgEntities = [];
+      knowledge.forEach((k, i) => {
+        const size = 0.2 + (k.connections || 1) * 0.08;
+        const geo = new THREE.SphereGeometry(size, 16, 16);
+        const mat = new THREE.MeshBasicMaterial({ color: typeColors[k.type] || 0xffffff, transparent: true, opacity: 0.85 });
+        const mesh = new THREE.Mesh(geo, mat);
+        const angle = (i / Math.max(knowledge.length, 1)) * Math.PI * 2;
+        const r = 8 + Math.random() * 5;
+        mesh.position.set(Math.cos(angle) * r, (Math.random() - 0.5) * 8, Math.sin(angle) * r);
+        mesh.userData = k;
+        kgGroup.add(mesh);
+        kgEntities.push(mesh);
+      });
+      for (let i = 0; i < Math.min(40, knowledge.length * 2); i++) {
+        if (kgEntities.length < 2) break;
+        const a = kgEntities[Math.floor(Math.random() * kgEntities.length)];
+        const b = kgEntities[Math.floor(Math.random() * kgEntities.length)];
+        if (a === b) continue;
+        const lineGeo = new THREE.BufferGeometry().setFromPoints([a.position, b.position]);
+        kgGroup.add(new THREE.Line(lineGeo, new THREE.LineBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.15 })));
+      }
+      scene.add(kgGroup);
+
+      // 目标晶体
+      goalGroup = new THREE.Group();
+      const goals = appData.goals || [];
+      const statusColors = { active: 0x10b981, learning: 0xf59e0b, planning: 0x7c3aed };
+      goals.forEach((g, i) => {
+        const geo = new THREE.IcosahedronGeometry(0.4 + (g.progress || 0) * 0.4, 1);
+        const mat = new THREE.MeshBasicMaterial({ color: statusColors[g.status] || 0x00d4ff, wireframe: true, transparent: true, opacity: 0.8 });
+        const crystal = new THREE.Mesh(geo, mat);
+        const angle = (i / Math.max(goals.length, 1)) * Math.PI * 2;
+        crystal.position.set(Math.cos(angle) * 14, 0, Math.sin(angle) * 14);
+        crystal.userData = g;
+        goalGroup.add(crystal);
+      });
+      scene.add(goalGroup);
+
+      // 技能光环
+      skillGroup = new THREE.Group();
+      const skills = appData.skills || [];
+      skills.forEach((s, i) => {
+        const torusGeo = new THREE.TorusGeometry(0.5 + (s.proficiency || 0.5) * 0.6, 0.04, 8, 32);
+        const torusMat = new THREE.MeshBasicMaterial({ color: s.color || 0x00d4ff, transparent: true, opacity: 0.7 });
+        const torus = new THREE.Mesh(torusGeo, torusMat);
+        const angle = (i / Math.max(skills.length, 1)) * Math.PI * 2;
+        torus.position.set(Math.cos(angle) * 10, -4, Math.sin(angle) * 10);
+        torus.userData = s;
+        skillGroup.add(torus);
+      });
+      scene.add(skillGroup);
+
+      // 情绪粒子
+      emotionGroup = new THREE.Group();
+      const emotions = appData.emotions || [];
+      emotions.forEach(emo => {
+        const geo = new THREE.BufferGeometry();
+        const pos = new Float32Array((emo.count || 50) * 3);
+        for (let i = 0; i < pos.length; i += 3) {
+          pos[i] = (Math.random() - 0.5) * 40;
+          pos[i+1] = (Math.random() - 0.5) * 25;
+          pos[i+2] = (Math.random() - 0.5) * 40;
+        }
+        geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+        const mat = new THREE.PointsMaterial({ color: emo.color || 0xffffff, size: 0.18, transparent: true, opacity: 0.8, blending: THREE.AdditiveBlending, depthWrite: false });
+        const p = new THREE.Points(geo, mat);
+        p.userData = { ...emo, orig: pos.slice() };
+        emotionGroup.add(p);
+      });
+      scene.add(emotionGroup);
+
+      // 反思之镜
+      const mirrorGeo = new THREE.PlaneGeometry(25, 25, 40, 40);
+      const mirrorMat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, transparent: true, opacity: 0.08, side: THREE.DoubleSide, wireframe: true });
+      mirror = new THREE.Mesh(mirrorGeo, mirrorMat);
+      mirror.rotation.x = -Math.PI / 2;
+      mirror.position.y = -6;
+      scene.add(mirror);
+
+      // 交互
+      setupInteraction();
+
+      // 导航
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          const v = btn.dataset.view;
+          memoryGroup.visible = v === 'all' || v === 'memory';
+          kgGroup.visible = v === 'all' || v === 'knowledge';
+          goalGroup.visible = v === 'all' || v === 'goals';
+          skillGroup.visible = v === 'all' || v === 'skills';
+          emotionGroup.visible = v === 'all' || v === 'emotions';
+          coreGroup.visible = v === 'all';
+          const cl = document.getElementById('core-label');
+          if (cl) cl.style.display = v === 'all' ? 'block' : 'none';
+        });
+      });
+
+      document.addEventListener('keydown', e => {
+        if (e.key === 'r' || e.key === 'R') { targetRot = { x: 0.3, y: 0 }; zoom = 35; }
+        if (e.key === ' ') e.preventDefault();
+      });
+
+      setTimeout(() => document.getElementById('loading').classList.add('hidden'), 2000);
+      animate();
+
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // 定期刷新数据
+      if (dataConnected) {
+        setInterval(async () => {
+          try {
+            const res = await fetch('/api/consciousness-data');
+            if (res.ok) {
+              appData = await res.json();
+              updateUI();
+            }
+          } catch (e) { /* 忽略刷新错误 */ }
+        }, 30000);
+      }
+    }
+
+    function setupInteraction() {
+      let isDrag = false, prevM = { x: 0, y: 0 };
+      renderer.domElement.addEventListener('mousedown', e => { isDrag = true; prevM = { x: e.clientX, y: e.clientY }; });
+      renderer.domElement.addEventListener('mousemove', e => {
+        if (!isDrag) return;
+        targetRot.y += (e.clientX - prevM.x) * 0.005;
+        targetRot.x += (e.clientY - prevM.y) * 0.005;
+        targetRot.x = Math.max(-1.2, Math.min(1.2, targetRot.x));
+        prevM = { x: e.clientX, y: e.clientY };
+      });
+      renderer.domElement.addEventListener('mouseup', () => isDrag = false);
+      renderer.domElement.addEventListener('mouseleave', () => isDrag = false);
+      renderer.domElement.addEventListener('wheel', e => { zoom = Math.max(12, Math.min(80, zoom + e.deltaY * 0.05)); });
+
+      const raycaster = new THREE.Raycaster();
+      const mouseV = new THREE.Vector2();
+      const tooltip = document.getElementById('tooltip');
+
+      renderer.domElement.addEventListener('click', e => {
+        mouseV.x = (e.clientX / window.innerWidth) * 2 - 1;
+        mouseV.y = -(e.clientY / window.innerHeight) * 2 + 1;
+        raycaster.setFromCamera(mouseV, camera);
+        const targets = [...kgEntities, ...goalGroup.children, ...skillGroup.children];
+        const hits = raycaster.intersectObjects(targets);
+        if (hits.length > 0) {
+          const d = hits[0].object.userData;
+          tooltip.querySelector('.tt-title').textContent = d.name;
+          let body = d.desc || d.content || '';
+          if (d.type) body += '\n类型: ' + d.type;
+          if (d.progress !== undefined) body += '\n进度: ' + (d.progress * 100).toFixed(0) + '%';
+          if (d.proficiency !== undefined) body += '\n熟练度: ' + (d.proficiency * 100).toFixed(0) + '%';
+          if (d.connections) body += '\n连接数: ' + d.connections;
+          tooltip.querySelector('.tt-body').textContent = body;
+          tooltip.style.left = (e.clientX + 15) + 'px';
+          tooltip.style.top = (e.clientY + 15) + 'px';
+          tooltip.classList.add('show');
+          setTimeout(() => tooltip.classList.remove('show'), 4000);
+        }
+      });
+    }
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+
+      rot.x += (targetRot.x - rot.x) * 0.05;
+      rot.y += (targetRot.y - rot.y) * 0.05;
+      camera.position.x = Math.sin(rot.y) * Math.cos(rot.x) * zoom;
+      camera.position.y = Math.sin(rot.x) * zoom + 5;
+      camera.position.z = Math.cos(rot.y) * Math.cos(rot.x) * zoom;
+      camera.lookAt(0, 0, 0);
+
+      // 核心动画
+      if (coreGroup) {
+        coreGroup.children[0].scale.setScalar(1 + Math.sin(t * 2) * 0.1);
+        coreGroup.children[0].material.opacity = 0.2 + Math.sin(t * 2) * 0.1;
+        coreGroup.children[1].rotation.y = t * 0.3;
+        coreGroup.children[1].rotation.x = t * 0.2;
+        coreGroup.children[2].rotation.z = t * 0.5;
+        coreGroup.children[3].rotation.z = -t * 0.4;
+        coreGroup.children[3].rotation.x = Math.PI / 3 + Math.sin(t) * 0.2;
+        coreGroup.children[4].rotation.y = t * 0.3;
+        coreGroup.children[4].rotation.z = Math.PI / 6 + Math.cos(t) * 0.2;
+      }
+
+      // 记忆旋转
+      if (memPoints) memPoints.rotation.y = t * 0.03;
+
+      // 目标环绕
+      if (goalGroup) {
+        goalGroup.children.forEach((g, i) => {
+          g.rotation.x = t * 0.3 + i;
+          g.rotation.y = t * 0.2 + i * 0.5;
+          const a = (i / Math.max(goalGroup.children.length, 1)) * Math.PI * 2 + t * 0.05;
+          g.position.x = Math.cos(a) * 14;
+          g.position.z = Math.sin(a) * 14;
+          g.position.y = Math.sin(t * 0.5 + i) * 0.5;
+        });
+      }
+
+      // 技能旋转
+      if (skillGroup) {
+        skillGroup.children.forEach((s, i) => {
+          s.rotation.x = t * 0.4 + i * 0.3;
+          s.rotation.z = t * 0.2 + i * 0.2;
+        });
+      }
+
+      // 情绪粒子
+      if (emotionGroup) {
+        emotionGroup.children.forEach(p => {
+          const arr = p.geometry.attributes.position.array;
+          const orig = p.userData.orig;
+          const dir = p.userData.dir;
+          for (let i = 0; i < arr.length; i += 3) {
+            arr[i] = orig[i] + Math.sin(t * 0.5 + i * 0.1) * 1;
+            arr[i+1] = orig[i+1] + ((dir * t * 0.3) % 15);
+            arr[i+2] = orig[i+2] + Math.cos(t * 0.5 + i * 0.1) * 1;
+          }
+          p.geometry.attributes.position.needsUpdate = true;
+        });
+      }
+
+      // 镜面波纹
+      if (mirror) {
+        const mp = mirror.geometry.attributes.position;
+        for (let i = 0; i < mp.count; i++) {
+          const x = mp.getX(i), y = mp.getY(i);
+          mp.setZ(i, Math.sin(x * 0.4 + t) * Math.cos(y * 0.4 + t) * 0.8);
+        }
+        mp.needsUpdate = true;
+      }
+
+      renderer.render(scene, camera);
+    }
+
+    // 启动
+    loadData();
+  </script>
+</body>
+</html>
